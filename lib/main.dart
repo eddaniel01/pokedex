@@ -5,7 +5,7 @@ import 'PokemonListScreen.dart';
 //import 'screens/home_screen.dart'; // Asegúrate de crear este archivo y pantalla
 
 void main() async {
-  await initHiveForFlutter(); // Inicialización de Hive para caché
+  await initHiveForFlutter();
 
   final HttpLink httpLink = HttpLink(
     'https://beta.pokeapi.co/graphql/v1beta',
@@ -30,7 +30,18 @@ class MyApp extends StatelessWidget {
       client: ValueNotifier(client),
       child: MaterialApp(
         title: 'Pokédex',
-        theme: ThemeData(primarySwatch: Colors.blue),
+        theme: ThemeData(
+          primaryColor: Color(0xFFFF1C1C),
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            secondary: Color(0xFFFFCC00),
+          ),
+          scaffoldBackgroundColor: Color(0xFFF5F5F5),
+          cardColor: Color(0xFFE1F5FE),
+          textTheme: TextTheme(
+            titleLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            bodyLarge: TextStyle(color: Colors.grey[800]),
+          ),
+        ),
         home: PokemonListScreen(),
       ),
     );

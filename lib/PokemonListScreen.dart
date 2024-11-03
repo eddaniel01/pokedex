@@ -23,9 +23,11 @@ class PokemonListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pokédex'),
-        backgroundColor: Colors.red,
+        title: Text('Pokédex', style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
       ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Query(
         options: QueryOptions(document: gql(getPokemonList)),
         builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
@@ -47,23 +49,26 @@ class PokemonListScreen extends StatelessWidget {
 
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                elevation: 4,
+                elevation: 5,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                color: Theme.of(context).cardColor,
                 child: ListTile(
+                  contentPadding: EdgeInsets.all(16),
                   leading: Image.network(
                     imageUrl,
-                    width: 50,
-                    height: 50,
+                    width: 60,
+                    height: 60,
                     fit: BoxFit.contain,
                   ),
                   title: Text(
                     name[0].toUpperCase() + name.substring(1),
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
                   subtitle: Text(
                     types,
-                    style: TextStyle(color: Colors.grey[700]),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  trailing: Icon(Icons.arrow_forward, color: Theme.of(context).colorScheme.secondary),
                   onTap: () {
                     Navigator.push(
                       context,

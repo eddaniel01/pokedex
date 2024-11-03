@@ -41,9 +41,10 @@ class PokemonDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalles de Pokémon'),
-        backgroundColor: Colors.red,
+        title: Text('Detalles de Pokémon', style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).primaryColor,
       ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Query(
         options: QueryOptions(document: gql(getPokemonDetail(id))),
         builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
@@ -57,8 +58,6 @@ class PokemonDetailScreen extends StatelessWidget {
           final types = pokemon['pokemon_v2_pokemontypes']
               .map((type) => type['pokemon_v2_type']['name'])
               .join(', ');
-          final height = pokemon['height'];
-          final weight = pokemon['weight'];
           final abilities = pokemon['pokemon_v2_pokemonabilities']
               .map((ability) => ability['pokemon_v2_ability']['name'])
               .join(', ');
@@ -84,45 +83,49 @@ class PokemonDetailScreen extends StatelessWidget {
                       SizedBox(height: 8),
                       Text(
                         name[0].toUpperCase() + name.substring(1),
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
                       ),
                       Text(
                         'Tipo: $types',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                        style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.secondary),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 16),
                 Divider(),
-                Text("Información Básica", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                _buildSectionTitle(context, "Información Básica"),
                 SizedBox(height: 8),
-                Text("Altura: ${height / 10} m"),
-                Text("Peso: ${weight / 10} kg"),
-                SizedBox(height: 16),
+                Text("Altura: ${pokemon['height']} decímetros"),
+                Text("Peso: ${pokemon['weight']} hectogramos"),
                 Divider(),
-                Text("Habilidades", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
+                _buildSectionTitle(context, "Habilidades"),
                 Text(abilities),
-                SizedBox(height: 16),
                 Divider(),
-                Text("Estadísticas", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
+                _buildSectionTitle(context, "Estadísticas"),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: stats.map<Widget>((stat) {
                     return Text("${stat['pokemon_v2_stat']['name']}: ${stat['base_stat']}");
                   }).toList(),
                 ),
-                SizedBox(height: 16),
                 Divider(),
-                Text("Movimientos (Ejemplo)", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
+                _buildSectionTitle(context, "Movimientos"),
                 Text(moves),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).primaryColor,
       ),
     );
   }
