@@ -169,17 +169,17 @@ class PokemonDetailScreen extends StatelessWidget {
                                   title: "Información Básica",
                                   content: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment: MainAxisAlignment.start,
                                       children: [
                                         Icon(Icons.height, color: Colors.grey),
-                                        Text("Altura: ${pokemon['height']} decímetros"),
+                                        Text("Altura:     ${pokemon['height']} m"),
                                       ],
                                     ),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment: MainAxisAlignment.start,
                                       children: [
                                         Icon(Icons.line_weight, color: Colors.grey),
-                                        Text("Peso: ${pokemon['weight']} hectogramos"),
+                                        Text("Peso:   ${pokemon['weight']} kg"),
                                       ],
                                     ),
                                   ],

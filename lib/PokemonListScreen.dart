@@ -122,8 +122,21 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => PokemonDetailScreen(id: pokemon['id']),
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => PokemonDetailScreen(id: pokemon['id']),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                const begin = Offset(1.0, 0.0);
+                                const end = Offset.zero;
+                                const curve = Curves.ease;
+
+                                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                var offsetAnimation = animation.drive(tween);
+
+                                return SlideTransition(
+                                  position: offsetAnimation,
+                                  child: child,
+                                );
+                              },
                             ),
                           );
                         },
