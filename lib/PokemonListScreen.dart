@@ -128,7 +128,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                             PageRouteBuilder(
                               pageBuilder: (context, animation, secondaryAnimation) => PokemonDetailScreen(id: pokemon['id']),
                               transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                const begin = Offset(1.0, 0.0);
+                                const begin = Offset(-1.0, 0.0);
                                 const end = Offset.zero;
                                 const curve = Curves.ease;
 

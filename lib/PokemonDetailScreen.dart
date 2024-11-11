@@ -39,15 +39,19 @@ query {
 class PokemonInfoSection extends StatelessWidget {
   final String title;
   final List<Widget> content;
+  final double? minHeight;
 
-  PokemonInfoSection({required this.title, required this.content});
+  PokemonInfoSection({required this.title, required this.content, this.minHeight});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8.0),
-      child: Padding(
+      child: Container(
         padding: EdgeInsets.all(16.0),
+        constraints: BoxConstraints(
+          minHeight: minHeight ?? 0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -164,51 +168,44 @@ class PokemonDetailScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Column(
                         children: [
-                          Container(
-                            height: 250,
-                            child: Column(
-                              children: [
-                                PokemonInfoSection(
-                                  title: "Información Básica",
-                                  content: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        Icon(Icons.height, color: Colors.grey),
-                                        Text("Altura:     ${pokemon['height']} m"),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        Icon(Icons.line_weight, color: Colors.grey),
-                                        Text("Peso:   ${pokemon['weight']} kg"),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          PokemonInfoSection(
+                            title: "Información Básica",
+                            content: [
+                              Row(
+                                children: [
+                                  Icon(Icons.height, color: Colors.grey),
+                                  SizedBox(width: 8),
+                                  Text("Altura: ${pokemon['height']} m"),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.line_weight, color: Colors.grey),
+                                  SizedBox(width: 8),
+                                  Text("Peso: ${pokemon['weight']} kg"),
+                                ],
+                              ),
+                            ],
+                            minHeight: 220,
                           ),
-                          Container(
-                            height: 350,
-                            child: PokemonInfoSection(
-                              title: "Estadísticas",
-                              content: stats.map<Widget>((stat) {
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(stat['pokemon_v2_stat']['name']),
-                                    Text("${stat['base_stat']}"),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
+                          SizedBox(height: 16),
+                          PokemonInfoSection(
+                            title: "Estadísticas",
+                            content: stats.map<Widget>((stat) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(stat['pokemon_v2_stat']['name']),
+                                  Text("${stat['base_stat']}"),
+                                ],
+                              );
+                            }).toList(),
+                            minHeight: 300,
                           ),
                         ],
                       ),
@@ -217,35 +214,32 @@ class PokemonDetailScreen extends StatelessWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          Container(
-                            height: 250,
-                            child: PokemonInfoSection(
-                              title: "Habilidades",
-                              content: abilities.map<Widget>((ability) {
-                                return ListTile(
-                                  leading: Icon(Icons.flash_on, color: Colors.amber),
-                                  title: Text(ability),
-                                );
-                              }).toList(),
-                            ),
+                          PokemonInfoSection(
+                            title: "Habilidades",
+                            content: abilities.map<Widget>((ability) {
+                              return ListTile(
+                                leading: Icon(Icons.flash_on, color: Colors.amber),
+                                title: Text(ability),
+                              );
+                            }).toList(),
+                            minHeight: 200,
                           ),
-                          Container(
-                            height: 350,
-                            child: PokemonInfoSection(
-                              title: "Movimientos",
-                              content: moves.map<Widget>((move) {
-                                return ListTile(
-                                  leading: Icon(Icons.swap_horiz, color: Colors.green),
-                                  title: Text(move),
-                                );
-                              }).toList(),
-                            ),
+                          SizedBox(height: 16),
+                          PokemonInfoSection(
+                            title: "Movimientos",
+                            content: moves.map<Widget>((move) {
+                              return ListTile(
+                                leading: Icon(Icons.swap_horiz, color: Colors.green),
+                                title: Text(move),
+                              );
+                            }).toList(),
+                            minHeight: 300,
                           ),
                         ],
                       ),
                     ),
                   ],
-                ),
+                )
               ],
             ),
           );
