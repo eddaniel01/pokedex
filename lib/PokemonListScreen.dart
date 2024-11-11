@@ -104,11 +104,14 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                       color: Theme.of(context).cardColor,
                       child: ListTile(
                         contentPadding: EdgeInsets.all(16),
-                        leading: Image.network(
-                          imageUrl,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.contain,
+                        leading: Hero(
+                          tag: 'pokemon-image-${pokemon['id']}',
+                          child: Image.network(
+                            imageUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.contain,
+                          )
                         ),
                         title: Text(
                           name[0].toUpperCase() + name.substring(1),

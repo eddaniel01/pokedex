@@ -150,7 +150,15 @@ class PokemonDetailScreen extends StatelessWidget {
                         ],
                       ),
                       SizedBox(width: 20),
-                      Image.network(imageUrl, width: 200, height: 200, fit: BoxFit.contain),
+                      Hero(
+                        tag: 'pokemon-image-$id',
+                        child: Image.network(
+                          imageUrl,
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ],
                   ),
                 ),
