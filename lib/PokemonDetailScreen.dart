@@ -222,7 +222,7 @@ class PokemonDetailScreen extends StatelessWidget {
                                 title: Text(ability),
                               );
                             }).toList(),
-                            minHeight: 200,
+                            minHeight: 220,
                           ),
                           SizedBox(height: 16),
                           PokemonInfoSection(
