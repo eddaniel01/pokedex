@@ -27,6 +27,8 @@ class PokemonListScreen extends StatefulWidget {
 class _PokemonListScreenState extends State<PokemonListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _filterType = '';
+  int? _filterGeneration;
+
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +54,13 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
               ),
               onChanged: (value) {
                 setState(() {
-                  _filterType = value.toLowerCase();
+                  if(int.tryParse(value) != null){
+                    _filterGeneration = int.parse(value);
+                    _filterType = '';
+                  } else {
+                    _filterType = value.toLowerCase();
+                    _filterGeneration = null;
+                  }
                 });
               },
             ),
@@ -67,12 +75,16 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
 
                 final List pokemons = result.data?['pokemon_v2_pokemon'];
 
-                // Filtrar la lista de Pokémon por tipo
+                // Filtrar la lista de Pokémon por tipo o generacion
                 final filteredPokemons = pokemons.where((pokemon) {
                   final types = pokemon['pokemon_v2_pokemontypes']
                       .map((type) => type['pokemon_v2_type']['name'].toLowerCase())
                       .toList();
-                  return types.contains(_filterType) || _filterType.isEmpty;
+                  final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
+
+                  bool matchesType = types.contains(_filterType) || _filterType.isEmpty;
+                  bool matchesGeneration = _filterGeneration == null || generationId == _filterGeneration;
+                  return matchesType && matchesGeneration;
                 }).toList();
 
                 return ListView.builder(
