@@ -10,6 +10,7 @@ query {
     pokemon_v2_pokemontypes {
       pokemon_v2_type {
         name
+        generation_id
       }
     }
   }
@@ -81,7 +82,8 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                     final types = pokemon['pokemon_v2_pokemontypes']
                         .map((type) => type['pokemon_v2_type']['name'])
                         .join(', ');
-
+                    final generationId = pokemon['pokemon_v2_pokemontypes']
+                        .first['pokemon_v2_type']['generation_id'];
                     return Card(
                       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       elevation: 5,
@@ -100,7 +102,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         subtitle: Text(
-                          types,
+                          '$types | Generación: $generationId',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                         trailing: Icon(Icons.arrow_forward, color: Theme.of(context).colorScheme.secondary),
