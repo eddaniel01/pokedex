@@ -4,7 +4,7 @@ import 'PokemonDetailScreen.dart';
 
 const String getPokemonList = """
 query {
-  pokemon_v2_pokemon(limit: 100) {
+  pokemon_v2_pokemon(limit: 600) {
     id
     name
     pokemon_v2_pokemontypes {

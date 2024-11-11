@@ -28,9 +28,13 @@ query {
         name
       }
     }
+    pokemon_v2_pokemonspecy {
+      generation_id
+    }
   }
 }
 """;
+
 
 class PokemonDetailScreen extends StatelessWidget {
   final int id;
@@ -65,6 +69,8 @@ class PokemonDetailScreen extends StatelessWidget {
           final moves = pokemon['pokemon_v2_pokemonmoves']
               .map((move) => move['pokemon_v2_move']['name'])
               .join(', ');
+          final generationId = pokemon['pokemon_v2_pokemonspecy']['generation_id'];
+
 
           return SingleChildScrollView(
             padding: EdgeInsets.all(16.0),
@@ -87,6 +93,10 @@ class PokemonDetailScreen extends StatelessWidget {
                       ),
                       Text(
                         'Tipo: $types',
+                        style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.secondary),
+                      ),
+                      Text(
+                        'Generación: $generationId',
                         style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.secondary),
                       ),
                     ],
