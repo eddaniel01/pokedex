@@ -31,6 +31,13 @@ query {
     }
     pokemon_v2_pokemonspecy {
       generation_id
+      pokemon_v2_evolutionchain {
+        pokemon_v2_pokemonspecies(order_by: {id: asc}) {
+          name
+          id
+          generation_id
+        }
+      }
     }
   }
 }
@@ -45,6 +52,7 @@ class PokemonInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
@@ -80,6 +88,8 @@ class PokemonDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(kToolbarHeight),
@@ -125,7 +135,11 @@ class PokemonDetailScreen extends StatelessWidget {
           final generationId = pokemon['pokemon_v2_pokemonspecy']['generation_id'];
           final primaryColor = pokemonTypeColors[types.split(',')[0]] ?? Colors.blue;
 
-          return SingleChildScrollView(
+          final evolutions = pokemon['pokemon_v2_pokemonspecy']['pokemon_v2_evolutionchain']['pokemon_v2_pokemonspecies'];
+
+          return Stack(
+          children: [
+            SingleChildScrollView(
             padding: EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,6 +256,25 @@ class PokemonDetailScreen extends StatelessWidget {
                 )
               ],
             ),
+          ),
+          Align(
+                alignment: Alignment.topRight,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (_) => EvolutionSlide(evolutions: evolutions),
+                    );
+                  },
+                   backgroundColor: primaryColor,
+                   child: Icon(Icons.trending_up),
+                ),
+          ),
+          ],
           );
         },
       ),
@@ -249,3 +282,50 @@ class PokemonDetailScreen extends StatelessWidget {
   }
 }
 
+class EvolutionSlide extends StatelessWidget {
+  final List evolutions;
+
+  EvolutionSlide({required this.evolutions});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16.0),
+      height: MediaQuery.of(context).size.height * 0.5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Evoluciones",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          Divider(),
+          Expanded(
+            child: ListView.builder(
+              itemCount: evolutions.length,
+              itemBuilder: (context, index) {
+                final evolution = evolutions[index];
+                final imageUrl =
+                    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evolution['id']}.png';
+
+                return ListTile(
+                  leading: Image.network(
+                    imageUrl,
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                  ),
+                  title: Text(
+                    evolution['name'][0].toUpperCase() + evolution['name'].substring(1),
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('Generación: ${evolution['generation_id']}'),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
