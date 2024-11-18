@@ -5,8 +5,11 @@ import 'PokemonListScreen.dart';
 //import 'screens/home_screen.dart'; // Asegúrate de crear este archivo y pantalla
 
 void main() async {
+
+  //inicializando BD Hive
   await initHiveForFlutter();
 
+  //enlace Http a la url de la api
   final HttpLink httpLink = HttpLink(
     'https://beta.pokeapi.co/graphql/v1beta',
   );

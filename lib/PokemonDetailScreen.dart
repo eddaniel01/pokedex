@@ -43,6 +43,7 @@ query {
 }
 """;
 
+
 class PokemonInfoSection extends StatelessWidget {
   final String title;
   final List<Widget> content;
