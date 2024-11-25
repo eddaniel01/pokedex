@@ -109,21 +109,20 @@ class PokemonDetailScreen extends StatelessWidget {
 
           final moves = (pokemon['pokemon_v2_pokemonmoves'] as List).map((moveData) {
             final move = moveData['pokemon_v2_move'];
-            final level = moveData['level']; // Esto debe ser un int
-
-            return {
-              'level': level ?? 0, // Valor predeterminado si el nivel es nulo
-              'name': move['name'],
-              'type': move['pokemon_v2_type']?['name'] ?? 'Unknown',
-              'damage_class': move['damage_class']?['name'] ?? 'Unknown',
-              'power': move['power']?.toString() ?? '—',
-              'accuracy': move['accuracy']?.toString() ?? '—',
-              'pp': move['pp']?.toString() ?? '—',
-              'effect': (move['pokemon_v2_moveeffect']?['pokemon_v2_moveeffecteffecttexts'] as List?)
-                  ?.isNotEmpty == true
-                  ? move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'][0]['effect']
-                  : 'No effect available.',
-            };
+            final level = moveData['level'];
+              return {
+                'level': level ?? 0,
+                'name': move['name'],
+                'type': move['pokemon_v2_type']?['name'] ?? 'Unknown',
+                'damage_class': move['damage_class']?['name'] ?? 'Unknown',
+                'power': move['power']?.toString() ?? '—',
+                'accuracy': move['accuracy']?.toString() ?? '—',
+                'pp': move['pp']?.toString() ?? '—',
+                'effect': (move['pokemon_v2_moveeffect']?['pokemon_v2_moveeffecteffecttexts'] as List?)
+                    ?.isNotEmpty == true
+                    ? move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'][0]['effect']
+                    : 'No effect available.',
+              };
           }).toList();
 
           return Stack(

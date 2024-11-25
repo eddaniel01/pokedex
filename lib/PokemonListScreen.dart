@@ -156,7 +156,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                 // Filtrar la lista de Pokémon
                 final filteredPokemons = pokemons.where((pokemon) {
                   final name = pokemon['name'].toLowerCase();
-                  final types = pokemon['pokemon_v2_pokemontypes']
+                  final types = (pokemon['pokemon_v2_pokemontypes'] as List)
                       .map((type) => type['pokemon_v2_type']['name'])
                       .toList();
                   final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
@@ -181,13 +181,11 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                   itemBuilder: (context, index) {
                     final pokemon = filteredPokemons[index];
                     final name = pokemon['name'];
-                    final imageUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon['id']}.png';
-                    final types = pokemon['pokemon_v2_pokemontypes']
+                    final imageUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon['id']}.png';
+                    final types = (pokemon['pokemon_v2_pokemontypes'] as List)
                         .map((type) => type['pokemon_v2_type']['name'])
                         .toList();
-                    final primaryType = types[0];
-                    final primaryColor = pokemonTypeColors[primaryType] ?? Colors.grey;
-
+                    final primaryColor = pokemonTypeColors[types[0]] ?? Colors.grey;
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -205,8 +203,8 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircleAvatar(
-                              backgroundColor: Colors.white.withOpacity(0.5),
-                              radius: 50,
+                              backgroundColor: Colors.white.withOpacity(0.4),
+                              radius: 70,
                               backgroundImage: NetworkImage(imageUrl),
                             ),
                             SizedBox(height: 10),
@@ -214,9 +212,22 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                               name[0].toUpperCase() + name.substring(1),
                               style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                             ),
-                            Text(
-                              primaryType.toUpperCase(),
-                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              children: types.map((type) {
+                                return Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                  decoration: BoxDecoration(
+                                    color: pokemonTypeColors[type] ?? Colors.grey,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    type.toUpperCase(),
+                                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ],
                         ),
