@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:pokedex_app/widgets/MoveCard.dart';
 import 'pokemonTypeColors.dart';
 
 String getPokemonDetail(int id) => """
@@ -16,6 +17,10 @@ query {
     pokemon_v2_pokemonabilities {
       pokemon_v2_ability {
         name
+        pokemon_v2_abilityeffecttexts(where: {language_id: {_eq: 9}}) {
+          short_effect
+          language_id
+        }
       }
     }
     pokemon_v2_pokemonstats {
@@ -24,9 +29,19 @@ query {
         name
       }
     }
-    pokemon_v2_pokemonmoves(limit: 5) {
+    pokemon_v2_pokemonmoves {
+      level
       pokemon_v2_move {
         name
+        power
+        accuracy
+        pp
+        damage_class: pokemon_v2_movedamageclass {
+          name
+        }
+        pokemon_v2_type {
+          name
+        }
       }
     }
     pokemon_v2_pokemonspecy {
@@ -80,13 +95,36 @@ class PokemonDetailScreen extends StatelessWidget {
           final height = pokemon['height'] / 10;
           final weight = pokemon['weight'] / 10;
 
-          final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List)
-              .map((ability) => ability['pokemon_v2_ability']['name'])
-              .toList();
+          final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List).map((abilityData) {
+            final ability = abilityData['pokemon_v2_ability'];
+            return {
+              'name': ability['name'],
+              'effect': (ability['pokemon_v2_abilityeffecttexts'] as List).isNotEmpty
+                  ? ability['pokemon_v2_abilityeffecttexts'][0]['short_effect']
+                  : 'No effect available.',
+            };
+          }).toList();
+
           final stats = pokemon['pokemon_v2_pokemonstats'] as List;
-          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List)
-              .map((move) => move['pokemon_v2_move']['name'])
-              .toList();
+
+          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List).map((moveData) {
+            final move = moveData['pokemon_v2_move'];
+            final level = moveData['level']; // Esto debe ser un int
+
+            return {
+              'level': level ?? 0, // Valor predeterminado si el nivel es nulo
+              'name': move['name'],
+              'type': move['pokemon_v2_type']?['name'] ?? 'Unknown',
+              'damage_class': move['damage_class']?['name'] ?? 'Unknown',
+              'power': move['power']?.toString() ?? '—',
+              'accuracy': move['accuracy']?.toString() ?? '—',
+              'pp': move['pp']?.toString() ?? '—',
+              'effect': (move['pokemon_v2_moveeffect']?['pokemon_v2_moveeffecteffecttexts'] as List?)
+                  ?.isNotEmpty == true
+                  ? move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'][0]['effect']
+                  : 'No effect available.',
+            };
+          }).toList();
 
           return Stack(
             children: [
@@ -147,14 +185,25 @@ class PokemonDetailScreen extends StatelessWidget {
                                   PokemonInfoSection(
                                     title: "Abilities",
                                     content: abilities.isNotEmpty
-                                        ? abilities
-                                            .map((ability) => Text(
-                                                  ability[0].toUpperCase() +
-                                                      ability.substring(1),
-                                                  style:
-                                                      TextStyle(fontSize: 16),
-                                                ))
-                                            .toList()
+                                        ? abilities.map((ability) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              ability['name'][0].toUpperCase() + ability['name'].substring(1),
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              ability['effect'],
+                                              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList()
                                         : [Text("No abilities available.")],
                                   ),
                                 ],
@@ -212,18 +261,7 @@ class PokemonDetailScreen extends StatelessWidget {
                               Center(
                                 child: Text("Evolution data under development"),
                               ),
-                              ListView(
-                                children: moves.map((move) {
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4.0),
-                                    child: Text(
-                                      move[0].toUpperCase() + move.substring(1),
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
+                              PokemonMovesTab(moves: moves),
                             ],
                           ),
                         ),
@@ -367,4 +405,31 @@ Widget _infoCard(String title, String value) {
       ],
     ),
   );
+
+
+}
+class PokemonMovesTab extends StatelessWidget {
+  final List<dynamic> moves;
+
+  PokemonMovesTab({required this.moves});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: moves.length,
+      itemBuilder: (context, index) {
+        final move = moves[index];
+
+        return MoveCard(
+          level: move['level'], // Esto ahora es un int
+          name: move['name'],
+          type: move['type'],
+          damageClass: move['damage_class'],
+          power: move['power'],
+          accuracy: move['accuracy'],
+          pp: move['pp'],
+        );
+      },
+    );
+  }
 }
