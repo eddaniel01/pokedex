@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:pokedex_app/widgets/EvolutionTree.dart';
 import 'package:pokedex_app/widgets/MoveCard.dart';
 import 'pokemonTypeColors.dart';
 
@@ -19,7 +20,6 @@ query {
         name
         pokemon_v2_abilityeffecttexts(where: {language_id: {_eq: 9}}) {
           short_effect
-          language_id
         }
       }
     }
@@ -51,6 +51,8 @@ query {
           name
           id
           generation_id
+          evolves_from_species_id
+          evolution_chain_id
         }
       }
     }
@@ -74,56 +76,84 @@ class PokemonDetailScreen extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (result.hasException) {
-            return Center(child: Text(result.exception.toString()));
-          }
+          // final client = GraphQLProvider.of(context).value;
+          // final cacheData = client.cache.readQuery(
+          //   Request(
+          //     operation: Operation(
+          //       document: gql(getPokemonDetail(id)),
+          //     ),
+          //   ),
+          // );
+          //
+          // print("Datos del caché: $cacheData");
 
+          if (result.hasException) {
+            return Center(
+              child: Text("Ocurrió un error al cargar los datos: ${result.exception.toString()}"),
+            );
+          }
+          if (result.data == null) {
+            return Center(child: Text("No se encontraron datos para este Pokémon."));
+          }
           final pokemon = result.data?['pokemon_v2_pokemon_by_pk'];
           if (pokemon == null) {
-            return Center(
-                child: Text("No se encontró información del Pokémon."));
+            return Center(child: Text("El Pokémon no tiene datos disponibles."));
           }
-
           final name = pokemon['name'] ?? "Desconocido";
           final imageUrl =
               'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png';
+
           final types = (pokemon['pokemon_v2_pokemontypes'] as List)
               .map((type) => type['pokemon_v2_type']['name'])
               .toList();
+
           final primaryColor = pokemonTypeColors[types[0]] ?? Colors.blue;
 
           final height = pokemon['height'] / 10;
           final weight = pokemon['weight'] / 10;
 
-          final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List).map((abilityData) {
+          final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List?)
+              ?.map((abilityData) {
             final ability = abilityData['pokemon_v2_ability'];
+            final effectTexts = ability?['pokemon_v2_abilityeffecttexts'] as List?;
             return {
-              'name': ability['name'],
-              'effect': (ability['pokemon_v2_abilityeffecttexts'] as List).isNotEmpty
-                  ? ability['pokemon_v2_abilityeffecttexts'][0]['short_effect']
+              'name': ability?['name'] ?? "Unknown",
+              'effect': effectTexts != null && effectTexts.isNotEmpty
+                  ? effectTexts[0]['short_effect']
                   : 'No effect available.',
             };
-          }).toList();
+          }).toList() ?? [];
 
           final stats = pokemon['pokemon_v2_pokemonstats'] as List;
 
-          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List).map((moveData) {
+          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List?)
+              ?.map((moveData) {
             final move = moveData['pokemon_v2_move'];
-            final level = moveData['level'];
-              return {
-                'level': level ?? 0,
-                'name': move['name'],
-                'type': move['pokemon_v2_type']?['name'] ?? 'Unknown',
-                'damage_class': move['damage_class']?['name'] ?? 'Unknown',
-                'power': move['power']?.toString() ?? '—',
-                'accuracy': move['accuracy']?.toString() ?? '—',
-                'pp': move['pp']?.toString() ?? '—',
-                'effect': (move['pokemon_v2_moveeffect']?['pokemon_v2_moveeffecteffecttexts'] as List?)
-                    ?.isNotEmpty == true
-                    ? move['pokemon_v2_moveeffect']['pokemon_v2_moveeffecteffecttexts'][0]['effect']
-                    : 'No effect available.',
-              };
-          }).toList();
+            return {
+              'level': moveData['level'] ?? 0,
+              'name': move?['name'] ?? "Unknown",
+              'type': move?['pokemon_v2_type']?['name'] ?? "Unknown",
+              'damage_class': move?['damage_class']?['name'] ?? "Unknown",
+              'power': move?['power']?.toString() ?? "—",
+              'accuracy': move?['accuracy']?.toString() ?? "—",
+              'pp': move?['pp']?.toString() ?? "—",
+            };
+          }).toList() ?? [];
+
+          final evolutionChainId = pokemon['pokemon_v2_pokemonspecy']['pokemon_v2_evolutionchain']
+          ['pokemon_v2_pokemonspecies'][0]['evolution_chain_id'];
+
+          final evolutions = (pokemon['pokemon_v2_pokemonspecy']['pokemon_v2_evolutionchain']
+          ['pokemon_v2_pokemonspecies'] as List<dynamic>)
+              .map((evo) => {
+            'id': evo['id'],
+            'name': evo['name'],
+            'evolves_from_species_id': evo['evolves_from_species_id'],
+            'evolution_chain_id': evo['evolution_chain_id'],
+            'image':
+            'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evo['id']}.png',
+          })
+              .toList();
 
           return Stack(
             children: [
@@ -257,9 +287,7 @@ class PokemonDetailScreen extends StatelessWidget {
                                   );
                                 }).toList(),
                               ),
-                              Center(
-                                child: Text("Evolution data under development"),
-                              ),
+                              EvolutionTree(evolutions: evolutions,evolutionChainId: evolutionChainId),
                               PokemonMovesTab(moves: moves),
                             ],
                           ),
@@ -420,7 +448,7 @@ class PokemonMovesTab extends StatelessWidget {
         final move = moves[index];
 
         return MoveCard(
-          level: move['level'], // Esto ahora es un int
+          level: move['level'],
           name: move['name'],
           type: move['type'],
           damageClass: move['damage_class'],
