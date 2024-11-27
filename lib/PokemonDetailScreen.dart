@@ -46,6 +46,9 @@ query {
     }
     pokemon_v2_pokemonspecy {
       generation_id
+      pokemon_v2_pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, limit: 1) {
+        flavor_text
+      }
       pokemon_v2_evolutionchain {
         pokemon_v2_pokemonspecies(order_by: {id: asc}) {
           name
@@ -203,28 +206,80 @@ class PokemonDetailScreen extends StatelessWidget {
                           child: TabBarView(
                             children: [
                               ListView(
+                                padding: const EdgeInsets.all(16.0),
                                 children: [
+                                  // Descripción
                                   PokemonInfoSection(
-                                    title: "Details",
+                                    title: "Description",
+                                    primaryColor: primaryColor,
                                     content: [
-                                      _infoCard("Height", "${height} m"),
-                                      _infoCard("Weight", "${weight} kg"),
+                                      Container(
+                                        padding: const EdgeInsets.all(12.0),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Text(
+                                          pokemon['pokemon_v2_pokemonspecy']['pokemon_v2_pokemonspeciesflavortexts'][0]['flavor_text']
+                                              .replaceAll("\n", " ")
+                                              .replaceAll("\f", " "),
+                                          style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.5),
+                                        ),
+                                      ),
                                     ],
                                   ),
+                                  const SizedBox(height: 24),
+
+                                  // Detalles (Altura y Peso)
+                                  PokemonInfoSection(
+                                    title: "Details",
+                                    primaryColor: primaryColor,
+                                    content: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          DetailCard(title: "Height", value: "${height} m"),
+                                          DetailCard(title: "Weight", value: "${weight} kg"),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Habilidades
                                   PokemonInfoSection(
                                     title: "Abilities",
-                                    content: abilities.isNotEmpty
-                                        ? abilities.map((ability) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                    primaryColor: primaryColor,
+                                    content: abilities.map((ability) {
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12.0),
+                                        padding: const EdgeInsets.all(12.0),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               ability['name'][0].toUpperCase() + ability['name'].substring(1),
-                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                             ),
-                                            SizedBox(height: 4),
+                                            const SizedBox(height: 4),
                                             Text(
                                               ability['effect'],
                                               style: TextStyle(fontSize: 14, color: Colors.grey[700]),
@@ -232,8 +287,7 @@ class PokemonDetailScreen extends StatelessWidget {
                                           ],
                                         ),
                                       );
-                                    }).toList()
-                                        : [Text("No abilities available.")],
+                                    }).toList(),
                                   ),
                                 ],
                               ),
@@ -271,8 +325,7 @@ class PokemonDetailScreen extends StatelessWidget {
                                                 maxStatValue,
                                             backgroundColor: Colors.grey[300],
                                             valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                    Colors.blue),
+                                                AlwaysStoppedAnimation<Color>(primaryColor),
                                           ),
                                         ),
                                         SizedBox(width: 16.0),
@@ -375,9 +428,10 @@ class PokemonInfoSection extends StatelessWidget {
   final String title;
   final List<Widget> content;
   final double? minHeight;
+  final Color primaryColor;
 
   PokemonInfoSection(
-      {required this.title, required this.content, this.minHeight});
+      {required this.title, required this.content,required this.primaryColor, this.minHeight});
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +450,7 @@ class PokemonInfoSection extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
+                color: primaryColor,
               ),
             ),
             Divider(),
@@ -408,33 +462,53 @@ class PokemonInfoSection extends StatelessWidget {
   }
 }
 
-Widget _infoCard(String title, String value) {
-  return Container(
-    padding: EdgeInsets.all(16.0),
-    margin: EdgeInsets.all(8.0),
-    decoration: BoxDecoration(
-      color: Colors.grey[100],
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black12,
-          blurRadius: 4,
-          offset: Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        Text(title, style: TextStyle(color: Colors.grey[600])),
-        SizedBox(height: 8),
-        Text(value,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      ],
-    ),
-  );
+class DetailCard extends StatelessWidget {
+  final String title;
+  final String value;
 
+  const DetailCard({required this.title, required this.value});
 
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.35,
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
 class PokemonMovesTab extends StatelessWidget {
   final List<dynamic> moves;
 
