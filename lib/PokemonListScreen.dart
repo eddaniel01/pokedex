@@ -5,7 +5,6 @@ import 'pokemonTypeColors.dart';
 import 'PokemonDetailScreen.dart';
 import 'FavoritesScreen.dart';
 
-
 const String getPokemonList = """
 query {
   pokemon_v2_pokemon(limit: 600) {
@@ -222,69 +221,63 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                         .toList();
                     final primaryColor = pokemonTypeColors[types[0]] ?? Colors.grey;
 
-                    return Stack(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PokemonDetailScreen(id: id),
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PokemonDetailScreen(id: id),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        color: primaryColor,
+                        elevation: 5,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.white.withOpacity(0.4),
+                              radius: 60,
+                              backgroundImage: NetworkImage(imageUrl),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              name[0].toUpperCase() + name.substring(1),
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              children: types.map((type) {
+                                return Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                                  padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                                  decoration: BoxDecoration(
+                                    color: pokemonTypeColors[type] ?? Colors.grey,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    type.toUpperCase(),
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            SizedBox(height: 8),
+                            IconButton(
+                              icon: Icon(
+                                _favoritePokemonIds.contains(id) ? Icons.favorite : Icons.favorite_border,
+                                color: _favoritePokemonIds.contains(id) ? Colors.red : Colors.white,
                               ),
-                            );
-                          },
-                          child: Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                            color: primaryColor,
-                            elevation: 5,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.white.withOpacity(0.4),
-                                  radius: 70,
-                                  backgroundImage: NetworkImage(imageUrl),
-                                ),
-                                SizedBox(height: 10),
-                                Text(
-                                  name[0].toUpperCase() + name.substring(1),
-                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  children: types.map((type) {
-                                    return Container(
-                                      margin: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                                      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                                      decoration: BoxDecoration(
-                                        color: pokemonTypeColors[type] ?? Colors.grey,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        type.toUpperCase(),
-                                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
+                              iconSize: 20,
+                              onPressed: () {
+                                _toggleFavorite(id);
+                              },
                             ),
-                          ),
+                          ],
                         ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: IconButton(
-                            icon: Icon(
-                              _favoritePokemonIds.contains(id) ? Icons.favorite : Icons.favorite_border,
-                              color: _favoritePokemonIds.contains(id) ? Colors.red : Colors.white,
-                            ),
-                            onPressed: () {
-                              _toggleFavorite(id);
-                            },
-                          ),
-                        ),
-                      ],
+                      ),
                     );
                   },
                 );
