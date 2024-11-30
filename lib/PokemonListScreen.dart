@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pokemonTypeColors.dart';
+import 'dart:convert'; // Para jsonEncode y jsonDecode
 import 'PokemonDetailScreen.dart';
 import 'FavoritesScreen.dart';
+import 'pokemonTypeColors.dart';
 
 const String getPokemonList = """
 query {
@@ -39,33 +40,42 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
   String? _selectedType;
   int? _selectedGeneration;
   String _searchQuery = '';
-  List<int> _favoritePokemonIds = []; // Lista para almacenar favoritos
+  List<Map<String, dynamic>> _favoritePokemons = []; // Lista de favoritos con detalles
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites(); // Cargar favoritos al iniciar
+    _loadFavorites();
   }
 
   /// Cargar favoritos desde SharedPreferences
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _favoritePokemonIds = prefs.getStringList('favorites')?.map(int.parse).toList() ?? [];
-    });
+    final savedFavorites = prefs.getString('favorites');
+    if (savedFavorites != null) {
+      setState(() {
+        _favoritePokemons = List<Map<String, dynamic>>.from(jsonDecode(savedFavorites));
+      });
+    }
   }
 
-  /// Alternar estado de favorito y guardar en SharedPreferences
-  Future<void> _toggleFavorite(int id) async {
+  /// Guardar favoritos en SharedPreferences
+  Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('favorites', jsonEncode(_favoritePokemons));
+  }
+
+  /// Alternar estado de favorito
+  Future<void> _toggleFavorite(Map<String, dynamic> pokemon) async {
     setState(() {
-      if (_favoritePokemonIds.contains(id)) {
-        _favoritePokemonIds.remove(id);
+      final index = _favoritePokemons.indexWhere((p) => p['id'] == pokemon['id']);
+      if (index != -1) {
+        _favoritePokemons.removeAt(index);
       } else {
-        _favoritePokemonIds.add(id);
+        _favoritePokemons.add(pokemon);
       }
     });
-    await prefs.setStringList('favorites', _favoritePokemonIds.map((e) => e.toString()).toList());
+    await _saveFavorites();
   }
 
   @override
@@ -81,7 +91,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FavoritesScreen(favoriteIds: _favoritePokemonIds),
+                  builder: (context) => FavoritesScreen(favoritePokemons: _favoritePokemons),
                 ),
               );
             },
@@ -213,13 +223,13 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                   itemCount: filteredPokemons.length,
                   itemBuilder: (context, index) {
                     final pokemon = filteredPokemons[index];
-                    final name = pokemon['name'];
                     final id = pokemon['id'];
-                    final imageUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
+                    final name = pokemon['name'];
                     final types = (pokemon['pokemon_v2_pokemontypes'] as List)
                         .map((type) => type['pokemon_v2_type']['name'])
                         .toList();
-                    final primaryColor = pokemonTypeColors[types[0]] ?? Colors.grey;
+                    final imageUrl =
+                        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
 
                     return GestureDetector(
                       onTap: () {
@@ -232,20 +242,24 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                       },
                       child: Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        color: primaryColor,
+                        color: pokemonTypeColors[types[0]] ?? Colors.grey,
                         elevation: 5,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircleAvatar(
                               backgroundColor: Colors.white.withOpacity(0.4),
-                              radius: 60,
+                              radius: 50,
                               backgroundImage: NetworkImage(imageUrl),
                             ),
                             SizedBox(height: 8),
                             Text(
                               name[0].toUpperCase() + name.substring(1),
-                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Wrap(
                               alignment: WrapAlignment.center,
@@ -264,15 +278,21 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                                 );
                               }).toList(),
                             ),
-                            SizedBox(height: 8),
                             IconButton(
                               icon: Icon(
-                                _favoritePokemonIds.contains(id) ? Icons.favorite : Icons.favorite_border,
-                                color: _favoritePokemonIds.contains(id) ? Colors.red : Colors.white,
+                                _favoritePokemons.any((p) => p['id'] == id)
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: _favoritePokemons.any((p) => p['id'] == id) ? Colors.red : Colors.white,
                               ),
                               iconSize: 20,
                               onPressed: () {
-                                _toggleFavorite(id);
+                                _toggleFavorite({
+                                  'id': id,
+                                  'name': name,
+                                  'types': types,
+                                  'imageUrl': imageUrl,
+                                });
                               },
                             ),
                           ],

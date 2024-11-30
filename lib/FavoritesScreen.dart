@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'PokemonDetailScreen.dart';
-import 'pokemonTypeColors.dart';
 
 class FavoritesScreen extends StatelessWidget {
-  final List<int> favoriteIds;
+  final List<Map<String, dynamic>> favoritePokemons;
 
-  FavoritesScreen({required this.favoriteIds});
+  FavoritesScreen({required this.favoritePokemons});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +13,7 @@ class FavoritesScreen extends StatelessWidget {
         title: Text('Favoritos'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: favoriteIds.isEmpty
+      body: favoritePokemons.isEmpty
           ? Center(
         child: Text(
           'No tienes Pokémon marcados como favoritos.',
@@ -22,9 +21,11 @@ class FavoritesScreen extends StatelessWidget {
         ),
       )
           : ListView.builder(
-        itemCount: favoriteIds.length,
+        itemCount: favoritePokemons.length,
         itemBuilder: (context, index) {
-          final id = favoriteIds[index];
+          final pokemon = favoritePokemons[index];
+          final id = pokemon['id'];
+          final name = pokemon['name'];
           final imageUrl =
               'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
 
@@ -32,7 +33,7 @@ class FavoritesScreen extends StatelessWidget {
             leading: CircleAvatar(
               backgroundImage: NetworkImage(imageUrl),
             ),
-            title: Text('Pokémon ID: $id'),
+            title: Text(name[0].toUpperCase() + name.substring(1)),
             onTap: () {
               Navigator.push(
                 context,
