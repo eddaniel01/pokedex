@@ -35,6 +35,7 @@ class FavoritesScreen extends StatelessWidget {
           final id = pokemon['id'];
           final name = pokemon['name'];
           final types = pokemon['types']; // Tipos del Pokémon
+          final primaryType = types.isNotEmpty ? types[0] : "normal"; // Usar el primer tipo como color
           final imageUrl =
               'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
 
@@ -50,6 +51,7 @@ class FavoritesScreen extends StatelessWidget {
             child: Card(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15)),
+              color: pokemonTypeColors[primaryType] ?? Colors.grey, // Fondo del color del tipo principal
               elevation: 5,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -67,7 +69,7 @@ class FavoritesScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Colors.white, // Contraste con el fondo
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -82,8 +84,7 @@ class FavoritesScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6.0, vertical: 2.0),
                         decoration: BoxDecoration(
-                          color: pokemonTypeColors[type] ??
-                              Colors.grey[400],
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
