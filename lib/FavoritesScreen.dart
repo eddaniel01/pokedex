@@ -34,6 +34,7 @@ class FavoritesScreen extends StatelessWidget {
           final pokemon = favoritePokemons[index];
           final id = pokemon['id'];
           final name = pokemon['name'];
+          final types = pokemon['types']; // Tipos del Pokémon
           final imageUrl =
               'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
 
@@ -53,12 +54,14 @@ class FavoritesScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Imagen del Pokémon
                   CircleAvatar(
                     backgroundColor: Colors.white.withOpacity(0.4),
                     radius: 50,
                     backgroundImage: NetworkImage(imageUrl),
                   ),
                   SizedBox(height: 8),
+                  // Nombre del Pokémon
                   Text(
                     name[0].toUpperCase() + name.substring(1),
                     style: TextStyle(
@@ -67,6 +70,32 @@ class FavoritesScreen extends StatelessWidget {
                       color: Colors.black87,
                     ),
                     textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  // Tipos del Pokémon
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    children: types.map<Widget>((type) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 4.0, vertical: 2.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6.0, vertical: 2.0),
+                        decoration: BoxDecoration(
+                          color: pokemonTypeColors[type] ??
+                              Colors.grey[400],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          type.toUpperCase(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
