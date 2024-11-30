@@ -84,13 +84,13 @@ class FavoritesScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6.0, vertical: 2.0),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: pokemonTypeColors[type] ?? Colors.grey, // Color basado en el tipo
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           type.toUpperCase(),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.white, // Texto blanco para contraste
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
