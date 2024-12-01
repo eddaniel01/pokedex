@@ -1,8 +1,16 @@
+
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:pokedex_app/widgets/EvolutionTree.dart';
 import 'package:pokedex_app/widgets/MoveCard.dart';
+import 'package:pokedex_app/widgets/PokemonCard.dart';
+import 'package:share_plus/share_plus.dart';
 import 'pokemonTypeColors.dart';
+import 'package:path_provider/path_provider.dart';
 
 String getPokemonDetail(int id) => """
 query {
@@ -66,6 +74,8 @@ query {
 class PokemonDetailScreen extends StatelessWidget {
   final int id;
 
+  final GlobalKey _cardKey = GlobalKey(); // Clave para capturar el RepaintBoundary.
+
   PokemonDetailScreen({required this.id});
 
   @override
@@ -109,11 +119,11 @@ class PokemonDetailScreen extends StatelessWidget {
           final types = (pokemon['pokemon_v2_pokemontypes'] as List)
               .map((type) => type['pokemon_v2_type']['name'])
               .toList();
-
+          final primaryType = types.isNotEmpty ? types[0] : "Unknown";
           final primaryColor = pokemonTypeColors[types[0]] ?? Colors.blue;
 
-          final height = pokemon['height'] / 10;
-          final weight = pokemon['weight'] / 10;
+          final height = pokemon['height' ?? 0] / 10;
+          final weight = pokemon['weight'?? 0 ] / 10;
 
           final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List?)
               ?.map((abilityData) {
@@ -126,6 +136,12 @@ class PokemonDetailScreen extends StatelessWidget {
                   : 'No effect available.',
             };
           }).toList() ?? [];
+          final firstAbility = (abilities.isNotEmpty
+              ? {
+            'name': abilities[0]['name'] as String,
+            'effect': abilities[0]['effect'] as String,
+          }
+              : {'name': 'Unknown', 'effect': 'No description available.'});
 
           final stats = pokemon['pokemon_v2_pokemonstats'] as List;
 
@@ -361,6 +377,7 @@ class PokemonDetailScreen extends StatelessWidget {
                       onPressed: () => Navigator.pop(context),
                       icon: Icon(Icons.arrow_back, color: Colors.white),
                     ),
+
                     SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -379,6 +396,7 @@ class PokemonDetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     SizedBox(height: 8),
                     Row(
                       children: types.map((type) {
@@ -400,6 +418,7 @@ class PokemonDetailScreen extends StatelessWidget {
                           ),
                         );
                       }).toList(),
+
                     ),
                   ],
                 ),
@@ -414,6 +433,26 @@ class PokemonDetailScreen extends StatelessWidget {
                     height: 200,
                     fit: BoxFit.contain,
                   ),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.05,
+                right: 16,
+                child: IconButton(
+                  onPressed: () {
+                    generateAndShareCard(
+                      context,
+                      _cardKey,
+                      name,
+                      imageUrl,
+                      primaryType,
+                      height,
+                      weight,
+                      firstAbility,
+                    );
+                  },
+                  icon: const Icon(Icons.share, color: Colors.white),
+                  tooltip: "Share Pokémon Card",
                 ),
               ),
             ],
@@ -531,6 +570,95 @@ class PokemonMovesTab extends StatelessWidget {
           pp: move['pp'],
         );
       },
+    );
+  }
+}
+
+Future<void> generateAndShareCard(
+    BuildContext context,
+    GlobalKey cardKey,
+    String name,
+    String imageUrl,
+    String type,
+    double height,
+    double weight,
+    Map<String, String> ability) async {
+  try {
+    final Color cardColor = pokemonTypeColors[type.toLowerCase()] ?? Colors.grey;
+
+    // Renderiza la tarjeta en un Overlay temporal
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Material(
+        color: Colors.transparent,
+        child: Center(
+          child: SizedBox(
+            width: 300,
+            height: 400,
+            child: RepaintBoundary(
+              key: cardKey,
+              child: PokemonCard(
+                name: name,
+                imageUrl: imageUrl,
+                type: type,
+                height: height,
+                weight: weight,
+                abilityName: ability['name']!,
+                abilityDescription: ability['effect']!,
+                backgroundColor: cardColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay?.insert(overlayEntry);
+
+    // Espera para que el widget se renderice completamente
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final boundary = cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) {
+      print("No se pudo capturar la tarjeta.");
+      overlayEntry.remove();
+      return;
+    }
+
+    final image = await boundary.toImage(pixelRatio: 3.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData == null) {
+      print("No se pudo capturar la tarjeta.");
+      overlayEntry.remove();
+      return;
+    }
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$name.png');
+    await file.writeAsBytes(byteData.buffer.asUint8List());
+
+    overlayEntry.remove();
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: "Check out this Pokémon card: $name!",
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Enviando con éxito!'),
+        backgroundColor: Colors.black12.withOpacity(0.3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  } catch (e) {
+    print("Error al compartir la tarjeta: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al compartir la imagen. Inténtalo nuevamente.'),
+        backgroundColor: Colors.red.withOpacity(0.8),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }
