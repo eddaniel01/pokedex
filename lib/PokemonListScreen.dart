@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // Para jsonEncode y jsonDecode
+import 'dart:convert';
 import 'PokemonDetailScreen.dart';
 import 'FavoritesScreen.dart';
 import 'pokemonTypeColors.dart';
 
 const String getPokemonList = """
-query {
-  pokemon_v2_pokemon(limit: 600) {
+query getPokemonList(\$limit: Int, \$offset: Int) {
+  pokemon_v2_pokemon(limit: \$limit, offset: \$offset) {
     id
     name
     pokemon_v2_pokemontypes {
@@ -37,12 +37,16 @@ class PokemonListScreen extends StatefulWidget {
 }
 
 class _PokemonListScreenState extends State<PokemonListScreen> {
-  String? _selectedType;
-  int? _selectedGeneration;
-  String _searchQuery = '';
-  String _sortBy = "id"; // Criterio de ordenación: "id" o "name"
-  bool _isAscendingOrder = true; // Orden ascendente o descendente
-  List<Map<String, dynamic>> _favoritePokemons = []; // Lista de favoritos con detalles
+  static const int pageSize = 20; // Tamaño de cada página para la paginación
+  String? _selectedType; // Filtro por tipo
+  int? _selectedGeneration; // Filtro por generación
+  String _searchQuery = ''; // Consulta de búsqueda
+  String _sortBy = "id"; // Criterio de ordenación ("id" o "name")
+  bool _isAscendingOrder = true; // Control de orden ascendente/descendente
+  List<Map<String, dynamic>> _favoritePokemons = []; // Lista de favoritos
+  final List<dynamic> _pokemonList = []; // Lista acumulativa de Pokémon
+  final Set<int> _pokemonIds = {}; // IDs únicos para evitar duplicados
+  bool _isFetchingMore = false; // Control de carga incremental
 
   @override
   void initState() {
@@ -50,7 +54,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
     _loadFavorites();
   }
 
-  /// Cargar favoritos desde SharedPreferences
+  /// Carga los favoritos desde SharedPreferences
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final savedFavorites = prefs.getString('favorites');
@@ -61,13 +65,13 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
     }
   }
 
-  /// Guardar favoritos en SharedPreferences
+  /// Guarda los favoritos en SharedPreferences
   Future<void> _saveFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('favorites', jsonEncode(_favoritePokemons));
   }
 
-  /// Alternar estado de favorito
+  /// Alterna el estado de favorito para un Pokémon
   Future<void> _toggleFavorite(Map<String, dynamic> pokemon) async {
     setState(() {
       final index = _favoritePokemons.indexWhere((p) => p['id'] == pokemon['id']);
@@ -78,6 +82,32 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
       }
     });
     await _saveFavorites();
+  }
+
+  /// Aplica filtros y búsqueda sobre la lista de Pokémon
+  List<dynamic> _applyFilters(List<dynamic> pokemonList) {
+    return pokemonList.where((pokemon) {
+      final name = pokemon['name'].toLowerCase();
+      final id = pokemon['id'].toString();
+      final types = (pokemon['pokemon_v2_pokemontypes'] as List)
+          .map((type) => type['pokemon_v2_type']['name'])
+          .toList();
+      final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
+
+      return (_searchQuery.isEmpty || name.contains(_searchQuery) || id.contains(_searchQuery)) &&
+          (_selectedType == null || types.contains(_selectedType)) &&
+          (_selectedGeneration == null || generationId == _selectedGeneration);
+    }).toList();
+  }
+
+  /// Agrega nuevos Pokémon a la lista acumulativa, evitando duplicados
+  void _addNewPokemons(List<dynamic> newPokemons) {
+    for (var pokemon in newPokemons) {
+      if (!_pokemonIds.contains(pokemon['id'])) {
+        _pokemonIds.add(pokemon['id']);
+        _pokemonList.add(pokemon);
+      }
+    }
   }
 
   @override
@@ -101,10 +131,10 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
           ),
           IconButton(
             icon: Icon(_isAscendingOrder ? Icons.arrow_upward : Icons.arrow_downward),
-            tooltip: "Ordenar de manera ascendente/descendente",
+            tooltip: "Alternar orden ascendente/descendente",
             onPressed: () {
               setState(() {
-                _isAscendingOrder = !_isAscendingOrder; // Alternar el orden
+                _isAscendingOrder = !_isAscendingOrder;
               });
             },
           ),
@@ -149,7 +179,6 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                // Dropdown para seleccionar tipos
                 Expanded(
                   child: Query(
                     options: QueryOptions(document: gql(getPokemonTypes)),
@@ -189,7 +218,6 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                   ),
                 ),
                 SizedBox(width: 8.0),
-                // Dropdown para seleccionar generación
                 Expanded(
                   child: DropdownButton<int>(
                     hint: Text("Generación"),
@@ -214,141 +242,161 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
               ],
             ),
           ),
+          // Lista de Pokémon con paginación
           Expanded(
             child: Query(
-              options: QueryOptions(document: gql(getPokemonList)),
+              options: QueryOptions(
+                document: gql(getPokemonList),
+                variables: {'limit': pageSize, 'offset': 0},
+              ),
               builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
-                if (result.isLoading) return Center(child: CircularProgressIndicator());
-                if (result.hasException) return Center(child: Text(result.exception.toString()));
+                if (result.isLoading && _pokemonList.isEmpty) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-                var filteredPokemons = result.data?['pokemon_v2_pokemon'];
+                if (result.hasException) {
+                  return Center(child: Text(result.exception.toString()));
+                }
 
-                // Filtrar Pokémon
-                filteredPokemons = filteredPokemons.where((pokemon) {
-                  final name = pokemon['name'].toLowerCase();
-                  final id = pokemon['id'].toString(); // Convertimos el ID a string para compararlo
-                  final types = (pokemon['pokemon_v2_pokemontypes'] as List)
-                      .map((type) => type['pokemon_v2_type']['name'])
-                      .toList();
-                  final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
+                if (result.data != null) {
+                  _addNewPokemons(result.data!['pokemon_v2_pokemon']);
+                }
 
-                  return (_searchQuery.isEmpty || name.contains(_searchQuery) || id.contains(_searchQuery)) &&
-                      (_selectedType == null || types.contains(_selectedType)) &&
-                      (_selectedGeneration == null || generationId == _selectedGeneration);
-                }).toList();
+                final filteredPokemons = _applyFilters(_pokemonList);
 
-                // Ordenar Pokémon según el criterio seleccionado
+                // Ordenar según criterio
                 filteredPokemons.sort((a, b) {
                   if (_sortBy == "id") {
                     final idA = a['id'] as int;
                     final idB = b['id'] as int;
                     return _isAscendingOrder ? idA.compareTo(idB) : idB.compareTo(idA);
-                  } else if (_sortBy == "name") {
+                  } else {
                     final nameA = a['name'] as String;
                     final nameB = b['name'] as String;
                     return _isAscendingOrder ? nameA.compareTo(nameB) : nameB.compareTo(nameA);
                   }
-                  return 0;
                 });
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 3 / 4,
-                  ),
-                  itemCount: filteredPokemons.length,
-                  itemBuilder: (context, index) {
-                    final pokemon = filteredPokemons[index];
-                    final id = pokemon['id'];
-                    final name = pokemon['name'];
-                    final types = (pokemon['pokemon_v2_pokemontypes'] as List)
-                        .map((type) => type['pokemon_v2_type']['name'])
-                        .toList();
-                    final imageUrl =
-                        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PokemonDetailScreen(id: id),
-                          ),
-                        );
-                      },
-                      child: Card(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        color: pokemonTypeColors[types[0]] ?? Colors.grey,
-                        elevation: 5,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.white.withOpacity(0.4),
-                              radius: 50,
-                              backgroundImage: NetworkImage(imageUrl),
-                            ),
-                            SizedBox(height: 8),
-                            // Mostrar ID del Pokémon
-                            Text(
-                              "#${id.toString().padLeft(3, '0')}",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              name[0].toUpperCase() + name.substring(1),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              children: types.map((type) {
-                                return Container(
-                                  margin: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                                  padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                                  decoration: BoxDecoration(
-                                    color: pokemonTypeColors[type] ?? Colors.grey,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    type.toUpperCase(),
-                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _favoritePokemons.any((p) => p['id'] == id)
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: _favoritePokemons.any((p) => p['id'] == id) ? Colors.red : Colors.white,
-                              ),
-                              iconSize: 20,
-                              onPressed: () {
-                                _toggleFavorite({
-                                  'id': id,
-                                  'name': name,
-                                  'types': types,
-                                  'imageUrl': imageUrl,
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (ScrollNotification scrollInfo) {
+                    if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent &&
+                        !_isFetchingMore &&
+                        fetchMore != null) {
+                      _isFetchingMore = true;
+                      fetchMore(FetchMoreOptions(
+                        variables: {'offset': _pokemonList.length},
+                        updateQuery: (previousResultData, fetchMoreResultData) {
+                          if (fetchMoreResultData == null) return previousResultData!;
+                          final newPokemons = fetchMoreResultData['pokemon_v2_pokemon'];
+                          _addNewPokemons(newPokemons);
+                          return previousResultData;
+                        },
+                      )).then((_) {
+                        setState(() {
+                          _isFetchingMore = false;
+                        });
+                      });
+                    }
+                    return false;
                   },
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 3 / 4,
+                    ),
+                    itemCount: filteredPokemons.length,
+                    itemBuilder: (context, index) {
+                      final pokemon = filteredPokemons[index];
+                      final id = pokemon['id'];
+                      final name = pokemon['name'];
+                      final types = (pokemon['pokemon_v2_pokemontypes'] as List)
+                          .map((type) => type['pokemon_v2_type']['name'])
+                          .toList();
+                      final imageUrl =
+                          'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$id.png';
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PokemonDetailScreen(id: id),
+                            ),
+                          );
+                        },
+                        child: Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          color: pokemonTypeColors[types[0]] ?? Colors.grey,
+                          elevation: 5,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.white.withOpacity(0.4),
+                                radius: 50,
+                                backgroundImage: NetworkImage(imageUrl),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "#${id.toString().padLeft(3, '0')}",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                name[0].toUpperCase() + name.substring(1),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                children: types.map((type) {
+                                  return Container(
+                                    margin: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                                    padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                                    decoration: BoxDecoration(
+                                      color: pokemonTypeColors[type] ?? Colors.grey,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      type.toUpperCase(),
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  _favoritePokemons.any((p) => p['id'] == id)
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: _favoritePokemons.any((p) => p['id'] == id) ? Colors.red : Colors.white,
+                                ),
+                                iconSize: 20,
+                                onPressed: () {
+                                  _toggleFavorite({
+                                    'id': id,
+                                    'name': name,
+                                    'types': types,
+                                    'imageUrl': imageUrl,
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),
