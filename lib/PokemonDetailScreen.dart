@@ -37,7 +37,7 @@ query {
         name
       }
     }
-    pokemon_v2_pokemonmoves {
+     pokemon_v2_pokemonmoves(where: {pokemon_id: {_eq: $id}}) {
       level
       pokemon_v2_move {
         name
@@ -145,8 +145,7 @@ class PokemonDetailScreen extends StatelessWidget {
 
           final stats = pokemon['pokemon_v2_pokemonstats'] as List;
 
-          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List?)
-              ?.map((moveData) {
+          final moves = (pokemon['pokemon_v2_pokemonmoves'] as List).map((moveData) {
             final move = moveData['pokemon_v2_move'];
             return {
               'level': moveData['level'] ?? 0,
@@ -157,7 +156,18 @@ class PokemonDetailScreen extends StatelessWidget {
               'accuracy': move?['accuracy']?.toString() ?? "—",
               'pp': move?['pp']?.toString() ?? "—",
             };
-          }).toList() ?? [];
+          }).toList();
+
+          // Eliminar duplicados exactos por nombre y nivel
+          final uniqueMoves = moves.fold<List<Map<String, dynamic>>>([], (filtered, move) {
+            if (!filtered.any((m) => m['name'] == move['name'])) {
+              filtered.add(move);
+            }
+            return filtered;
+          });
+
+        //ordenar movimientos
+        //   uniqueMoves.sort((a, b) => a['level'].compareTo(b['level']));
 
           final evolutionChainId = pokemon['pokemon_v2_pokemonspecy']['pokemon_v2_evolutionchain']
           ['pokemon_v2_pokemonspecies'][0]['evolution_chain_id'];
@@ -357,7 +367,7 @@ class PokemonDetailScreen extends StatelessWidget {
                                 }).toList(),
                               ),
                               EvolutionTree(evolutions: evolutions,evolutionChainId: evolutionChainId),
-                              PokemonMovesTab(moves: moves),
+                              PokemonMovesTab(moves: uniqueMoves),
                             ],
                           ),
                         ),

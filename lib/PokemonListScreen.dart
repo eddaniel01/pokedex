@@ -19,11 +19,6 @@ query {
     pokemon_v2_pokemonspecy {
       generation_id
     }
-    pokemon_v2_pokemonabilities {
-      pokemon_v2_ability {
-        name
-      }
-    }
   }
 }
 """;
@@ -31,14 +26,6 @@ query {
 const String getPokemonTypes = """
 query {
   pokemon_v2_type {
-    name
-  }
-}
-""";
-
-const String getPokemonAbilities = """
-query {
-  pokemon_v2_ability(order_by: {name: asc}) {
     name
   }
 }
@@ -52,7 +39,6 @@ class PokemonListScreen extends StatefulWidget {
 class _PokemonListScreenState extends State<PokemonListScreen> {
   String? _selectedType;
   int? _selectedGeneration;
-  String? _selectedAbility;
   String _searchQuery = '';
   String _sortBy = "id"; // Criterio de ordenación: "id" o "name"
   bool _isAscendingOrder = true; // Orden ascendente o descendente
@@ -92,112 +78,6 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
       }
     });
     await _saveFavorites();
-  }
-
-  /// Mostrar filtros en un BottomSheet
-  void _showFilterBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setBottomSheetState) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Filtro por tipo
-                Query(
-                  options: QueryOptions(document: gql(getPokemonTypes)),
-                  builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
-                    if (result.isLoading) return Center(child: CircularProgressIndicator());
-                    if (result.hasException) return Center(child: Text(result.exception.toString()));
-
-                    final List types = result.data?['pokemon_v2_type'];
-                    final allTypes = [{'name': 'Todos los Tipos'}, ...types];
-
-                    return DropdownButton<String>(
-                      hint: Text("Filtrar por Tipo"),
-                      value: _selectedType,
-                      items: allTypes.map<DropdownMenuItem<String>>((type) {
-                        final typeName = type['name'];
-                        return DropdownMenuItem<String>(
-                          value: typeName == 'Todos los Tipos' ? null : typeName,
-                          child: Text(typeName[0].toUpperCase() + typeName.substring(1)),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        setBottomSheetState(() {
-                          _selectedType = value;
-                        });
-                      },
-                      isExpanded: true,
-                    );
-                  },
-                ),
-                SizedBox(height: 16.0),
-                // Filtro por generación
-                DropdownButton<int>(
-                  hint: Text("Filtrar por Generación"),
-                  value: _selectedGeneration,
-                  items: [
-                    DropdownMenuItem<int>(value: null, child: Text("Todas las Generaciones")),
-                    for (int generation = 1; generation <= 8; generation++)
-                      DropdownMenuItem<int>(
-                        value: generation,
-                        child: Text("Generación $generation"),
-                      ),
-                  ],
-                  onChanged: (int? value) {
-                    setBottomSheetState(() {
-                      _selectedGeneration = value;
-                    });
-                  },
-                  isExpanded: true,
-                ),
-                SizedBox(height: 16.0),
-                // Filtro por habilidad
-                Query(
-                  options: QueryOptions(document: gql(getPokemonAbilities)),
-                  builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
-                    if (result.isLoading) return Center(child: CircularProgressIndicator());
-                    if (result.hasException) return Center(child: Text(result.exception.toString()));
-
-                    final List abilities = result.data?['pokemon_v2_ability'];
-                    final allAbilities = [{'name': 'Todas las Habilidades'}, ...abilities];
-
-                    return DropdownButton<String>(
-                      hint: Text("Filtrar por Habilidad"),
-                      value: _selectedAbility,
-                      items: allAbilities.map<DropdownMenuItem<String>>((ability) {
-                        final abilityName = ability['name'];
-                        return DropdownMenuItem<String>(
-                          value: abilityName == 'Todas las Habilidades' ? null : abilityName,
-                          child: Text(abilityName[0].toUpperCase() + abilityName.substring(1)),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        setBottomSheetState(() {
-                          _selectedAbility = value;
-                        });
-                      },
-                      isExpanded: true,
-                    );
-                  },
-                ),
-                SizedBox(height: 16.0),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Cerrar el BottomSheet
-                    setState(() {}); // Aplicar los filtros seleccionados
-                  },
-                  child: Text("Aplicar Filtros"),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -264,6 +144,76 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
               },
             ),
           ),
+          // Filtros de tipo y generación
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              children: [
+                // Dropdown para seleccionar tipos
+                Expanded(
+                  child: Query(
+                    options: QueryOptions(document: gql(getPokemonTypes)),
+                    builder: (QueryResult result, {VoidCallback? refetch, FetchMore? fetchMore}) {
+                      if (result.isLoading) return Center(child: CircularProgressIndicator());
+                      if (result.hasException) return Center(child: Text(result.exception.toString()));
+
+                      final List types = result.data?['pokemon_v2_type'];
+                      final allTypes = [{'name': 'Todos los Tipos'}, ...types];
+
+                      return DropdownButton<String>(
+                        hint: Text("Tipo"),
+                        value: _selectedType,
+                        items: allTypes.map<DropdownMenuItem<String>>((type) {
+                          final typeName = type['name'];
+                          return DropdownMenuItem<String>(
+                            value: typeName == 'Todos los Tipos' ? null : typeName,
+                            child: Text(
+                              typeName[0].toUpperCase() + typeName.substring(1),
+                              style: TextStyle(
+                                color: typeName == 'Todos los Tipos'
+                                    ? Colors.black
+                                    : pokemonTypeColors[typeName] ?? Colors.grey,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? value) {
+                          setState(() {
+                            _selectedType = value;
+                          });
+                        },
+                        isExpanded: true,
+                        underline: SizedBox(),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: 8.0),
+                // Dropdown para seleccionar generación
+                Expanded(
+                  child: DropdownButton<int>(
+                    hint: Text("Generación"),
+                    value: _selectedGeneration,
+                    items: [
+                      DropdownMenuItem<int>(value: null, child: Text("Generación")),
+                      for (int generation = 1; generation <= 8; generation++)
+                        DropdownMenuItem<int>(
+                          value: generation,
+                          child: Text("Gen $generation"),
+                        ),
+                    ],
+                    onChanged: (int? value) {
+                      setState(() {
+                        _selectedGeneration = value;
+                      });
+                    },
+                    isExpanded: true,
+                    underline: SizedBox(),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: Query(
               options: QueryOptions(document: gql(getPokemonList)),
@@ -276,19 +226,15 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                 // Filtrar Pokémon
                 filteredPokemons = filteredPokemons.where((pokemon) {
                   final name = pokemon['name'].toLowerCase();
-                  final id = pokemon['id'].toString();
+                  final id = pokemon['id'].toString(); // Convertimos el ID a string para compararlo
                   final types = (pokemon['pokemon_v2_pokemontypes'] as List)
                       .map((type) => type['pokemon_v2_type']['name'])
                       .toList();
                   final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
-                  final abilities = (pokemon['pokemon_v2_pokemonabilities'] as List)
-                      .map((ability) => ability['pokemon_v2_ability']['name'])
-                      .toList();
 
                   return (_searchQuery.isEmpty || name.contains(_searchQuery) || id.contains(_searchQuery)) &&
                       (_selectedType == null || types.contains(_selectedType)) &&
-                      (_selectedGeneration == null || generationId == _selectedGeneration) &&
-                      (_selectedAbility == null || abilities.contains(_selectedAbility));
+                      (_selectedGeneration == null || generationId == _selectedGeneration);
                 }).toList();
 
                 // Ordenar Pokémon según el criterio seleccionado
@@ -346,6 +292,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                               backgroundImage: NetworkImage(imageUrl),
                             ),
                             SizedBox(height: 8),
+                            // Mostrar ID del Pokémon
                             Text(
                               "#${id.toString().padLeft(3, '0')}",
                               style: TextStyle(
@@ -407,11 +354,6 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showFilterBottomSheet,
-        child: Icon(Icons.filter_alt),
-        backgroundColor: Theme.of(context).primaryColor,
       ),
     );
   }
