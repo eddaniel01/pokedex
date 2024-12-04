@@ -40,7 +40,8 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
   String? _selectedType;
   int? _selectedGeneration;
   String _searchQuery = '';
-  bool _isAscendingOrder = true; // Variable para controlar el orden ascendente o descendente
+  String _sortBy = "id"; // Criterio de ordenación: "id" o "name"
+  bool _isAscendingOrder = true; // Orden ascendente o descendente
   List<Map<String, dynamic>> _favoritePokemons = []; // Lista de favoritos con detalles
 
   @override
@@ -86,9 +87,21 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
         title: Text('Pokédex', style: TextStyle(color: Colors.white)),
         backgroundColor: Theme.of(context).primaryColor,
         actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.sort, color: Colors.white),
+            onSelected: (value) {
+              setState(() {
+                _sortBy = value;
+              });
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: "id", child: Text("Ordenar por ID")),
+              PopupMenuItem(value: "name", child: Text("Ordenar por Nombre")),
+            ],
+          ),
           IconButton(
             icon: Icon(_isAscendingOrder ? Icons.arrow_upward : Icons.arrow_downward),
-            tooltip: "Ordenar por ID",
+            tooltip: "Ordenar de manera ascendente/descendente",
             onPressed: () {
               setState(() {
                 _isAscendingOrder = !_isAscendingOrder; // Alternar el orden
@@ -224,11 +237,18 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                       (_selectedGeneration == null || generationId == _selectedGeneration);
                 }).toList();
 
-                // Ordenar Pokémon por ID
+                // Ordenar Pokémon según el criterio seleccionado
                 filteredPokemons.sort((a, b) {
-                  final idA = a['id'] as int;
-                  final idB = b['id'] as int;
-                  return _isAscendingOrder ? idA.compareTo(idB) : idB.compareTo(idA);
+                  if (_sortBy == "id") {
+                    final idA = a['id'] as int;
+                    final idB = b['id'] as int;
+                    return _isAscendingOrder ? idA.compareTo(idB) : idB.compareTo(idA);
+                  } else if (_sortBy == "name") {
+                    final nameA = a['name'] as String;
+                    final nameB = b['name'] as String;
+                    return _isAscendingOrder ? nameA.compareTo(nameB) : nameB.compareTo(nameA);
+                  }
+                  return 0;
                 });
 
                 return GridView.builder(
