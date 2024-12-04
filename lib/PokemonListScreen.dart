@@ -328,8 +328,24 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => PokemonDetailScreen(id: id),
+                          PageRouteBuilder(
+                            transitionDuration: const Duration(milliseconds: 300),
+                            reverseTransitionDuration: const Duration(milliseconds: 300),
+                            pageBuilder: (context, animation, secondaryAnimation) => PokemonDetailScreen(id: id),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              // Animación de deslizamiento
+                              const begin = Offset(1.0, 0.0); // Comienza fuera de la pantalla (derecha)
+                              const end = Offset.zero;       // Termina en su posición
+                              const curve = Curves.easeInOut;
+
+                              final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                              final offsetAnimation = animation.drive(tween);
+
+                              return SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              );
+                            },
                           ),
                         );
                       },
@@ -340,10 +356,13 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.white.withOpacity(0.4),
-                              radius: 50,
-                              backgroundImage: NetworkImage(imageUrl),
+                            Hero(
+                              tag: 'pokemon-image-$id',
+                              child: CircleAvatar(
+                                backgroundColor: Colors.white.withOpacity(0.4),
+                                radius: 50,
+                                backgroundImage: NetworkImage(imageUrl),
+                              ),
                             ),
                             SizedBox(height: 8),
                             Text(
