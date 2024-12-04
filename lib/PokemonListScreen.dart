@@ -253,6 +253,16 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                               backgroundImage: NetworkImage(imageUrl),
                             ),
                             SizedBox(height: 8),
+                            // Mostrar ID del Pokémon
+                            Text(
+                              "#${id.toString().padLeft(3, '0')}",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 4),
                             Text(
                               name[0].toUpperCase() + name.substring(1),
                               style: TextStyle(
