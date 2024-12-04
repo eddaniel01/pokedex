@@ -366,7 +366,13 @@ class PokemonDetailScreen extends StatelessWidget {
                                   );
                                 }).toList(),
                               ),
-                              EvolutionTree(evolutions: evolutions,evolutionChainId: evolutionChainId),
+                              Align(
+                                alignment: Alignment.center,
+                                child: EvolutionTree(
+                                  evolutions: evolutions,
+                                  evolutionChainId: evolutionChainId,
+                                ),
+                              ),
                               PokemonMovesTab(moves: uniqueMoves),
                             ],
                           ),
