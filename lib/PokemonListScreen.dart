@@ -40,6 +40,7 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
   String? _selectedType;
   int? _selectedGeneration;
   String _searchQuery = '';
+  bool _isAscendingOrder = true; // Variable para controlar el orden ascendente o descendente
   List<Map<String, dynamic>> _favoritePokemons = []; // Lista de favoritos con detalles
 
   @override
@@ -85,6 +86,15 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
         title: Text('Pokédex', style: TextStyle(color: Colors.white)),
         backgroundColor: Theme.of(context).primaryColor,
         actions: [
+          IconButton(
+            icon: Icon(_isAscendingOrder ? Icons.arrow_upward : Icons.arrow_downward),
+            tooltip: "Ordenar por ID",
+            onPressed: () {
+              setState(() {
+                _isAscendingOrder = !_isAscendingOrder; // Alternar el orden
+              });
+            },
+          ),
           IconButton(
             icon: Icon(Icons.favorite, color: Colors.white),
             onPressed: () {
@@ -198,9 +208,10 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                 if (result.isLoading) return Center(child: CircularProgressIndicator());
                 if (result.hasException) return Center(child: Text(result.exception.toString()));
 
-                final List pokemons = result.data?['pokemon_v2_pokemon'];
+                var filteredPokemons = result.data?['pokemon_v2_pokemon'];
 
-                final filteredPokemons = pokemons.where((pokemon) {
+                // Filtrar Pokémon
+                filteredPokemons = filteredPokemons.where((pokemon) {
                   final name = pokemon['name'].toLowerCase();
                   final id = pokemon['id'].toString(); // Convertimos el ID a string para compararlo
                   final types = (pokemon['pokemon_v2_pokemontypes'] as List)
@@ -213,6 +224,12 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
                       (_selectedGeneration == null || generationId == _selectedGeneration);
                 }).toList();
 
+                // Ordenar Pokémon por ID
+                filteredPokemons.sort((a, b) {
+                  final idA = a['id'] as int;
+                  final idB = b['id'] as int;
+                  return _isAscendingOrder ? idA.compareTo(idB) : idB.compareTo(idA);
+                });
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(8.0),
