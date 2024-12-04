@@ -202,15 +202,17 @@ class _PokemonListScreenState extends State<PokemonListScreen> {
 
                 final filteredPokemons = pokemons.where((pokemon) {
                   final name = pokemon['name'].toLowerCase();
+                  final id = pokemon['id'].toString(); // Convertimos el ID a string para compararlo
                   final types = (pokemon['pokemon_v2_pokemontypes'] as List)
                       .map((type) => type['pokemon_v2_type']['name'])
                       .toList();
                   final generationId = pokemon['pokemon_v2_pokemonspecy']?['generation_id'];
 
-                  return (_searchQuery.isEmpty || name.contains(_searchQuery)) &&
+                  return (_searchQuery.isEmpty || name.contains(_searchQuery) || id.contains(_searchQuery)) &&
                       (_selectedType == null || types.contains(_selectedType)) &&
                       (_selectedGeneration == null || generationId == _selectedGeneration);
                 }).toList();
+
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(8.0),
